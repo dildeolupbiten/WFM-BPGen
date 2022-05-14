@@ -1,0 +1,6 @@
+# -*- coding: utf-8 -*-
+
+from scripts.gui import main
+
+if __name__ == "__main__":
+    main()

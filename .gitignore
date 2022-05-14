@@ -1,0 +1,6 @@
+*.xlsx
+*.pyc
+*.json
+*.ini
+__pycache__
+venv
