@@ -470,5 +470,5 @@ def to_excel(date, break_plan, hc):
                         frmt = interval_format(j=j)
                     try:
                         ws.write(i + 1, j, column, wb.add_format(frmt))
-                    except ValueError:
+                    except (ValueError, TypeError):
                         pass
