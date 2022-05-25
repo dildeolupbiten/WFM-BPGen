@@ -87,7 +87,7 @@ def get_avg_values_of_n_days(filename, skill, n_days):
         _input = "No.of Total Input"
         _output = "No.of Total Output"
     df = pd.read_excel(filename, sheet_name=skill)
-    date = sorted(set(df["Date"]))[-2]
+    date = sorted(set(df["Date"]))[-1]
     start = (date - td(days=n_days)).strftime("%m/%d/%Y")
     end = date.strftime("%m/%d/%Y")
     data1 = []
@@ -159,7 +159,7 @@ def get_intervals(filename, progress=None):
         need = get_need(
             avg_input=avg_input,
             aht_target=avg_aht,
-            shrinkage=1
+            shrinkage=0.9
         )
         need = need.assign(
             **{"Skill": [skill] * 24, "Time": [*range(24)]}
