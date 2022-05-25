@@ -37,6 +37,7 @@ class ComboboxToplevel(tk.Toplevel):
     def __init__(self, images, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Edit Defaults")
+        self.resizable(width=False, height=False)
         self.images = images
         self.breaks = read_json("defaults.json")
         if os.name == "nt" and os.path.exists("images/pyc.ico"):
