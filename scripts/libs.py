@@ -14,7 +14,7 @@ from PIL import Image, ImageTk
 from xlsxwriter import Workbook
 from tkcalendar import Calendar
 from webbrowser import open_new
-from statistics import harmonic_mean
+from statistics import harmonic_mean, stdev
 from tkinter.filedialog import askopenfilename
 from datetime import datetime as dt, timedelta as td
 from tkinter.messagebox import showinfo, showwarning, showerror

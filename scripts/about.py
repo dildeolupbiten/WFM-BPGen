@@ -13,7 +13,7 @@ class About(tk.Toplevel):
         self.version = version
         self.name = "WFM-BPGen"
         self.date_built = "01.05.2022"
-        self.date_updated = "15.05.2022"
+        self.date_updated = "29.05.2022"
         self.developed_by = "Tanberk Celalettin Kutlu"
         self.contact = "tckutlu@gmail.com"
         self.github = "https://github.com/dildeolupbiten/WFM-BPGen"

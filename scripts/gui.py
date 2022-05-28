@@ -402,10 +402,10 @@ class Menu(tk.Menu):
                         parent=self.master
                     )
                 )
-                self.vars["Part"].set("0/2")
+                self.vars["Part"].set("0/3")
                 self.active = False
                 return
-        self.vars["Part"].set("1/2")
+        self.vars["Part"].set("1/3")
         if "Shift Plan" not in self.data:
             try:
                 self.data["Shift Plan"] = get_shift_plan(
@@ -420,7 +420,7 @@ class Menu(tk.Menu):
                         parent=self.master
                     )
                 )
-                self.vars["Part"].set("0/2")
+                self.vars["Part"].set("0/3")
                 self.active = False
                 return
         if "RTA LoB Hourly Status" not in self.data:
@@ -444,19 +444,7 @@ class Menu(tk.Menu):
                         parent=self.master
                     )
                 )
-                self.vars["Part"].set("0/2")
-                self.active = False
-                return
-            except TypeError:
-                self.master.after(
-                    0,
-                    lambda: showwarning(
-                        title="Error",
-                        message="The date is out of the shift plan.",
-                        parent=self.master
-                    )
-                )
-                self.vars["Part"].set("0/2")
+                self.vars["Part"].set("0/3")
                 self.active = False
                 return
         hc = get_hc(df=self.data["Shift Plan"], date=date)
@@ -464,13 +452,14 @@ class Menu(tk.Menu):
         intervals = intervals.assign(**{"HC": hc["HC"].values})
         intervals = intervals[["Skill", "Time", "HC", "Need"]]
         breaks = read_json("defaults.json")
-        self.vars["Part"].set("2/2")
+        self.vars["Part"].set("2/3")
         create_break_plan(
             intervals=intervals,
             shift_plan=self.data["Shift Plan"],
             date=date,
             breaks=breaks,
-            progress=self.progress
+            progress=self.progress,
+            var=self.vars
         )
         self.active = False
         self.master.after(

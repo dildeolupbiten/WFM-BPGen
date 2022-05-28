@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .libs import (
-    os, json, np, pd, perf_counter, Workbook, harmonic_mean, dt, td
+    os, json, np, pd, perf_counter, Workbook, harmonic_mean, dt, td, stdev
 )
 
 BREAKS = {
@@ -12,27 +12,27 @@ BREAKS = {
     },
     "Lunch": {
         "Start": 3,
-        "End": 5.25,
+        "End": 5,
         "Minutes": 45
     },
     "Rest-2": {
-        "Start": 6.25,
-        "End": 7.75,
+        "Start": 6,
+        "End": 6.75,
         "Minutes": 15
     },
     "Quiz": {
         "Start": 0.5,
-        "End": 7.75,
+        "End": 7,
         "Minutes": 30
     },
     "Wellness 1": {
         "Start": 3,
-        "End": 7.75,
+        "End": 7.5,
         "Minutes": 15
     },
     "Wellness 2": {
         "Start": 3,
-        "End": 7.75,
+        "End": 7.5,
         "Minutes": 15
     }
 }
@@ -123,28 +123,18 @@ def get_need(avg_input, aht_target, shrinkage):
     return pd.DataFrame(data=data, columns=["Need"])
 
 
-def get_targets(filename, columns):
-    df = pd.read_excel(filename, sheet_name="Map")[columns]
-    return {
-        i: {
-            "AHT Target": round(
-                df[df["LoB"] == i]["AHT Target"].values.tolist()[0],
-                2
-            )
-        }
-        for i in df["Skill"]
-        if pd.notna(i)
-    }
+def get_skills(filename):
+    df = pd.read_excel(filename, sheet_name="Map")["Skill"]
+    return [i for i in df.values if pd.notna(i)]
 
 
 def get_intervals(filename, progress=None):
-    columns = ["Skill", "AHT Target", "LoB"]
-    targets = get_targets(filename=filename, columns=columns)
+    skills = get_skills(filename=filename)
     data = pd.DataFrame()
-    size = len(targets)
+    size = len(skills)
     now = perf_counter()
     received = 0
-    for skill in targets:
+    for skill in skills:
         received += 1
         progress(
             s=size,
@@ -190,8 +180,14 @@ def get_15_minutes_interval(df, date):
                 hc = df.values[index + 1][2]
             else:
                 hc = df.values[index][2]
-            data.append([row[0], t, hc, row[3]])
-    return pd.DataFrame(data=data, columns=["Skill", "Date", "HC", "Need"])
+            data.append([row[0], t, hc, *row[3:]])
+    df = pd.DataFrame(
+        data=data,
+        columns=["Skill", "Datetime", "HC", "Need"]
+    )
+    df = df.assign(**{"Left": [0] * len(df)})
+    df = df.assign(**{"Remaining": df["HC"].values})
+    return df
 
 
 def get_shift_times(date, shift):
@@ -249,22 +245,49 @@ def has_conflict(breaks, break_start_time, break_times, key):
     return False
 
 
-def create_break_plan(intervals, date, shift_plan, breaks, progress):
-    date = dt.strptime(date, "%m/%d/%Y")
-    date2 = (date + td(days=1)).strftime("%m/%d/%Y")
-    date1 = date.strftime("%m/%d/%Y")
-    hc1 = get_15_minutes_interval(df=intervals, date=date1)
-    hc2 = get_15_minutes_interval(df=intervals, date=date2)
+def sort_break_plan(df):
+    column_index = [i for i in df.columns]
+    mandatory_activities = ["Rest-1", "Lunch", "Rest-2"]
+    for skill in sorted(set(df["Skill"])):
+        df_skill = df[df["Skill"] == skill]
+        for shift in sorted(set(df_skill["Shift"])):
+            df_skill_shift = df_skill[df_skill["Shift"] == shift]
+            indexes = [*df_skill_shift.index]
+            for i in mandatory_activities:
+                data = df_skill_shift.sort_values(by=i)
+                df.iloc[indexes[0]:indexes[-1] + 1, column_index.index(i)] = data[i].values
+    return df
+
+
+def create_break_plan(
+        intervals,
+        date,
+        shift_plan,
+        breaks,
+        progress,
+        var,
+        recursion=False,
+        hc1=None,
+        hc2=None,
+        b_plan=None
+):
+    if not recursion:
+        breaks = {k: v for k, v in breaks.items() if k in ["Rest-1", "Lunch", "Rest-2"]}
+        hc1 = get_15_minutes_interval(df=intervals, date=date)
+        hc2 = get_15_minutes_interval(
+            df=intervals,
+            date=(dt.strptime(date, "%m/%d/%Y") + td(days=1)).strftime("%m/%d/%Y")
+        )
+        if dt.strptime(date, "%m/%d/%Y").isoweekday() == 1:
+            write_json(filename="quiz.json", data={})
+    quiz = read_json(filename="quiz.json", data={}, breaks=False)
     skill_conversions = convert_skillname(shift_plan=shift_plan, hc=hc1)
-    data1 = shift_plan[["Username", "Manager", "Skill", "Name Surname", date1]]
-    left1 = {}
-    left2 = {}
+    data = shift_plan[["Username", "Manager", "Skill", "Name Surname", date]]
     break_plan = []
-    skills = sorted(set(data1["Skill"]))
+    skills = sorted(set(data["Skill"]))
     size = len(skills)
     received = 0
     now = perf_counter()
-    quiz = read_json(filename="quiz.json", data={}, breaks=False)
     for skill in skills:
         received += 1
         progress(
@@ -272,40 +295,43 @@ def create_break_plan(intervals, date, shift_plan, breaks, progress):
             r=received,
             n=now
         )
-        data_skill1 = data1[data1["Skill"] == skill]
+        data_skill = data[data["Skill"] == skill]
         hc_skill1 = hc1[hc1["Skill"] == skill_conversions[skill]]
         hc_skill2 = hc2[hc2["Skill"] == skill_conversions[skill]]
-        left1[skill] = {
-            (dt.strptime(date1, "%m/%d/%Y") + td(minutes=i * 15)): 0
-            for i in range(24 * 4)
-        }
-        left2[skill] = {
-            (dt.strptime(date2, "%m/%d/%Y") + td(minutes=i * 15)): 0
-            for i in range(24 * 4)
-        }
         for shift in sorted(
-                set(
-                    [
-                        i for i in data_skill1[date1]
-                        if isinstance(i, str) and len(i) == 11 and i[0].isnumeric()
-                    ]
-                )
+            set(
+                [
+                    i for i in data_skill[date]
+                    if isinstance(i, str) and len(i) == 11 and i[0].isnumeric()
+                ]
+            )
         ):
-            data = data_skill1[data_skill1[date1] == shift]
-            start, end = get_shift_times(date=date1, shift=shift)
-            shuffled = data.values
-            np.random.shuffle(shuffled)
+            data_skill_shift = data_skill[data_skill[date] == shift]
+            start, end = get_shift_times(date=date, shift=shift)
+            shuffled = data_skill_shift.values
+            if not recursion:
+                np.random.shuffle(shuffled)
             for people in shuffled:
-                break_times = {}
+                if not recursion:
+                    break_times = {}
+                else:
+                    break_times = b_plan[b_plan["Name Surname"] == people[3]]
+                    break_times = {
+                        "Rest-1": pd.to_datetime(break_times["Rest-1"].values[0]),
+                        "Lunch": pd.to_datetime(break_times["Lunch"].values[0]),
+                        "Rest-2": pd.to_datetime(break_times["Rest-2"].values[0])
+                    }
                 for key, value in breaks.items():
-                    if key in break_times:
-                        continue
                     if key == "Quiz":
-                        if date.isoweekday() == 1 and shift in ["00:00-08:30", "08:00-17:00"]:
+                        if (
+                            dt.strptime(date, "%m/%d/%Y").isoweekday() == 1
+                            and
+                            shift in ["00:00-08:30", "08:00-17:00"]
+                        ):
                             break_times["Quiz"] = ""
                             continue
-                        if people[-2] not in quiz:
-                            quiz[people[-2]] = True
+                        if people[3] not in quiz:
+                            quiz[people[3]] = True
                         else:
                             break_times["Quiz"] = ""
                             continue
@@ -321,80 +347,104 @@ def create_break_plan(intervals, date, shift_plan, breaks, progress):
                             +
                             td(minutes=15 * i)
                         )
-                        if has_conflict(
-                            breaks=breaks,
-                            break_times=break_times,
-                            break_start_time=break_start_time,
-                            key=key
+                        if (
+                            recursion
+                            and
+                            has_conflict(
+                                breaks=read_json("defaults.json"),
+                                break_start_time=break_start_time,
+                                break_times=break_times,
+                                key=key
+                            )
                         ):
                             continue
                         ps = []
                         for interval in range(value["Minutes"] // 15):
                             int_time = break_start_time + td(minutes=interval * 15)
-                            if int_time >= dt.strptime(date2, "%m/%d/%Y"):
-                                hc_skill = hc_skill2
-                                left = left2
-                            else:
-                                hc_skill = hc_skill1
-                                left = left1
-                            hc_skill_date = hc_skill[hc_skill["Date"] == int_time]
-                            hc_skill_total = hc_skill_date["HC"].values[0]
-                            hc_skill_need = hc_skill_date["Need"].values[0]
-                            p = ((hc_skill_total - left[skill][int_time]) / hc_skill_need) * 100
+                            try:
+                                hc_skill_date = hc_skill1[hc_skill1["Datetime"] == int_time]
+                                hc_skill_remaining = hc_skill_date["Remaining"].values[0]
+                                hc_skill_need = hc_skill_date["Need"].values[0]
+                            except IndexError:
+                                hc_skill_date = hc_skill2[hc_skill2["Datetime"] == int_time]
+                                hc_skill_remaining = hc_skill_date["Remaining"].values[0]
+                                hc_skill_need = hc_skill_date["Need"].values[0]
+                            p = (hc_skill_remaining / hc_skill_need) * 100
                             ps += [p]
-                        alternatives[break_start_time] = harmonic_mean(ps)
+                        if value["Minutes"] // 15 > 1:
+                            alternatives[break_start_time] = harmonic_mean(ps) - stdev(ps)
+                        else:
+                            alternatives[break_start_time] = ps
                     p_values = [value for value in alternatives.values()]
                     index = p_values.index(max(p_values))
                     for j in range(value["Minutes"] // 15):
                         t = [*alternatives.keys()][index] + td(minutes=j * 15)
                         if j == 0:
                             break_times[key] = t
-                        if t >= dt.strptime(date2, "%m/%d/%Y"):
-                            left2[skill][t] += 1
-                        else:
-                            left1[skill][t] += 1
+                        try:
+                            time_index = hc_skill1[hc_skill1["Datetime"] == t].index[0]
+                            hc1.iloc[time_index, 5] -= 1
+                            hc1.iloc[time_index, 4] += 1
+                        except IndexError:
+                            time_index = hc_skill2[hc_skill2["Datetime"] == t].index[0]
+                            hc2.iloc[time_index, 5] -= 1
+                            hc2.iloc[time_index, 4] += 1
+                hc_skill1 = hc1[hc1["Skill"] == skill_conversions[skill]]
+                hc_skill2 = hc2[hc2["Skill"] == skill_conversions[skill]]
                 break_plan.append(
                     [
-                        dt.strptime(date1, "%m/%d/%Y"),
-                        *people[:-1],
-                        people[-1],
+                        dt.strptime(date, "%m/%d/%Y"),
+                        people[1],
+                        people[2],
+                        people[0],
+                        people[3],
+                        people[4],
                         *break_times.values()
                     ]
                 )
-    left_data = [
-        [skill, value, left1[skill][value]]
-        for skill in left1 for value in left1[skill]
-    ]
-    left_columns = ["Skill", "Minute", "Left"]
-    left_df = pd.DataFrame(data=left_data, columns=left_columns)
-    hc = hc1.assign(**{"Left": left_df["Left"].values})
-    hc = hc.assign(**{"Remaining": hc["HC"].values - hc["Left"].values})
-    hc = hc.assign(**{"Percentage": hc["Remaining"] / hc["Need"] * 100})
-    hc["Need"] = [round(i, 2) for i in hc["Need"]]
-    hc["Percentage"] = [round(i, 2) for i in hc["Percentage"].values]
-    columns = [
-        "Date",
-        "Username",
-        "Manager",
-        "Skill",
-        "Name Surname",
-        "Shift",
-        *breaks.keys()
-    ]
-    b_plan = pd.DataFrame(data=break_plan, columns=columns)
-    b_plan = b_plan[b_plan["Date"] == date]
-    columns = [
-        "Date",
-        "Manager",
-        "Skill",
-        "Username",
-        "Name Surname",
-        "Shift",
-        *breaks.keys()
-    ]
-    b_plan = b_plan[columns]
-    write_json(filename="quiz.json", data=quiz)
-    to_excel(date, b_plan, hc)
+    if not recursion:
+        columns = [
+            "Date",
+            "Manager",
+            "Skill",
+            "Username",
+            "Name Surname",
+            "Shift",
+            *breaks.keys()
+        ]
+        pd.DataFrame(data=break_plan, columns=columns)
+        b_plan = pd.DataFrame(data=break_plan, columns=columns)
+        b_plan = sort_break_plan(b_plan)
+        breaks = {k: v for k, v in BREAKS.items() if k not in ["Rest-1", "Lunch", "Rest-2"]}
+        var["Part"].set("3/3")
+        create_break_plan(
+            intervals=intervals,
+            shift_plan=shift_plan,
+            breaks=breaks,
+            progress=progress,
+            recursion=True,
+            hc1=hc1,
+            hc2=hc2,
+            b_plan=b_plan,
+            date=date,
+            var=var
+        )
+    else:
+        columns = [
+            "Date",
+            "Manager",
+            "Skill",
+            "Username",
+            "Name Surname",
+            "Shift",
+            *BREAKS.keys()
+        ]
+        pd.DataFrame(data=break_plan, columns=columns)
+        b_plan = pd.DataFrame(data=break_plan, columns=columns)
+        hc1 = hc1.assign(**{"Percentage": hc1["Remaining"] / hc1["Need"] * 100})
+        hc1["Percentage"] = [round(i, 2) for i in hc1["Percentage"]]
+        write_json(filename="quiz.json", data=quiz)
+        to_excel(date, b_plan, hc1)
 
 
 def break_plan_format(j):
@@ -436,6 +486,7 @@ def interval_format(j):
 
 
 def to_excel(date, break_plan, hc):
+    date = dt.strptime(date, "%m/%d/%Y")
     date_format = f"{date.month}.{date.day}"
     filename = f"{date_format} Break Plan.xlsx"
     cell_format = {
