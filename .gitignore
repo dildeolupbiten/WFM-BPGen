@@ -2,6 +2,7 @@
 *.pyc
 *.json
 *.ini
+*.bat
 __pycache__
 venv
 Break Plans
