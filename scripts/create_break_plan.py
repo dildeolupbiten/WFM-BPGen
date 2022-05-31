@@ -7,7 +7,7 @@ from .libs import (
 BREAKS = {
     "Rest-1": {
         "Start": 1,
-        "End": 2,
+        "End": 2.25,
         "Minutes": 15
     },
     "Lunch": {
@@ -16,8 +16,8 @@ BREAKS = {
         "Minutes": 45
     },
     "Rest-2": {
-        "Start": 6,
-        "End": 6.75,
+        "Start": 5,
+        "End": 7,
         "Minutes": 15
     },
     "Quiz": {
@@ -100,8 +100,12 @@ def get_avg_values_of_n_days(filename, skill, n_days):
     for i in range(24):
         noti = df[df["Time"] == i][f"{_input}"]
         aht = df[df["Time"] == i][f"AHT (s)"]
-        data1.append(sum(noti) / len(noti))
-        data2.append(sum(noti * aht) / sum(noti))
+        try:
+            data1.append(sum(noti) / len(noti))
+            data2.append(sum(noti * aht) / sum(noti))
+        except ZeroDivisionError:
+            data1.append(0)
+            data2.append(0)
     return (
         pd.DataFrame(data=data1, columns=columns1),
         pd.DataFrame(data=data2, columns=columns2)
@@ -144,7 +148,7 @@ def get_intervals(filename, progress=None):
         avg_input, avg_aht = get_avg_values_of_n_days(
             filename=filename,
             skill=skill,
-            n_days=7
+            n_days=2
         )
         need = get_need(
             avg_input=avg_input,
