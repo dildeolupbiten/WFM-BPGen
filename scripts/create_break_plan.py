@@ -7,7 +7,7 @@ from .libs import (
 BREAKS = {
     "Rest-1": {
         "Start": 1,
-        "End": 2.25,
+        "End": 2,
         "Minutes": 15
     },
     "Lunch": {
@@ -16,7 +16,7 @@ BREAKS = {
         "Minutes": 45
     },
     "Rest-2": {
-        "Start": 5,
+        "Start": 6,
         "End": 7,
         "Minutes": 15
     },
@@ -59,7 +59,8 @@ def get_hc(df, date):
     previous_date = previous_date.strftime("%m/%d/%Y")
     data = []
     columns = ["Skill", "Time", "HC"]
-    for skill in sorted(set(df["Skill"])):
+    skills = sorted(set(df["Skill"]), key=str.lower)
+    for skill in skills:
         skill_data = {i: 0 for i in range(24)}
         for shift in df[df["Skill"] == skill][date]:
             counter(shift=shift, date=date, data=skill_data)
@@ -80,12 +81,8 @@ def get_hc(df, date):
 
 
 def get_avg_values_of_n_days(filename, skill, n_days):
-    if skill in ["TTR1_Recalled", "TTR2_Label1", "TTR2_Long"]:
-        _input = "No.of High-pri. Incoming"
-        _output = "No.of High-pri. Output"
-    else:
-        _input = "No.of Total Input"
-        _output = "No.of Total Output"
+    _input = "No.of Total Input"
+    _output = "No.of Total Output"
     df = pd.read_excel(filename, sheet_name=skill)
     date = sorted(set(df["Date"]))[-1]
     start = (date - td(days=n_days)).strftime("%m/%d/%Y")
@@ -129,7 +126,10 @@ def get_need(avg_input, aht_target, shrinkage):
 
 def get_skills(filename):
     df = pd.read_excel(filename, sheet_name="Map")["Skill"]
-    return [i for i in df.values if pd.notna(i)]
+    return sorted(
+        [i for i in df.values if pd.notna(i)],
+        key=str.lower
+    )
 
 
 def get_intervals(filename, progress=None):
@@ -165,7 +165,7 @@ def get_intervals(filename, progress=None):
 def get_shift_plan(filename):
     df = pd.read_excel(io=filename, sheet_name="Overall")
     df = pd.DataFrame(data=df.values[42:], columns=df.values[41])
-    columns = ["Username", "Manager", "Skill", "Name Surname"]
+    columns = ["Aze User", "Manager", "Skill", "Name Surname"]
     columns += [i for i in df.columns if isinstance(i, dt)]
     df = df[columns]
     df.columns = [
@@ -207,12 +207,10 @@ def convert_skillname(shift_plan, hc):
     skill_conversions = {
         i: j
         for i, j in zip(
-            sorted(set(shift_plan["Skill"])),
-            sorted(set(hc["Skill"]))
+            sorted(set(shift_plan["Skill"]), key=str.lower),
+            sorted(set(hc["Skill"]), key=str.lower)
         )
     }
-    skill_conversions["Audio"] = "Audio_TR"
-    skill_conversions["Audio-AR"] = "Audio_AR"
     return skill_conversions
 
 
@@ -286,9 +284,9 @@ def create_break_plan(
             write_json(filename="quiz.json", data={})
     quiz = read_json(filename="quiz.json", data={}, breaks=False)
     skill_conversions = convert_skillname(shift_plan=shift_plan, hc=hc1)
-    data = shift_plan[["Username", "Manager", "Skill", "Name Surname", date]]
+    data = shift_plan[["Aze User", "Manager", "Skill", "Name Surname", date]]
     break_plan = []
-    skills = sorted(set(data["Skill"]))
+    skills = sorted(set(data["Skill"]), key=str.lower)
     size = len(skills)
     received = 0
     now = perf_counter()
@@ -308,7 +306,7 @@ def create_break_plan(
                     i for i in data_skill[date]
                     if isinstance(i, str) and len(i) == 11 and i[0].isnumeric()
                 ]
-            )
+            ),
         ):
             data_skill_shift = data_skill[data_skill[date] == shift]
             start, end = get_shift_times(date=date, shift=shift)
@@ -411,7 +409,7 @@ def create_break_plan(
             "Date",
             "Manager",
             "Skill",
-            "Username",
+            "Aze User",
             "Name Surname",
             "Shift",
             *breaks.keys()
@@ -438,7 +436,7 @@ def create_break_plan(
             "Date",
             "Manager",
             "Skill",
-            "Username",
+            "Aze User",
             "Name Surname",
             "Shift",
             *BREAKS.keys()
