@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .libs import (
-    os, json, np, pd, perf_counter, Workbook, harmonic_mean, dt, td, stdev
+    os, json, np, pd, perf_counter, Workbook, dt, td
 )
 
 BREAKS = {
@@ -148,7 +148,7 @@ def get_intervals(filename, progress=None):
         avg_input, avg_aht = get_avg_values_of_n_days(
             filename=filename,
             skill=skill,
-            n_days=2
+            n_days=7
         )
         need = get_need(
             avg_input=avg_input,
@@ -374,7 +374,16 @@ def create_break_plan(
                             p = (hc_skill_remaining / hc_skill_need) * 100
                             ps += [p]
                         if value["Minutes"] // 15 > 1:
-                            alternatives[break_start_time] = harmonic_mean(ps) - stdev(ps)
+                            will_be_summed = []
+                            has_zero = False
+                            for j in ps:
+                                if j == 0:
+                                    has_zero = True
+                                else:
+                                    will_be_summed += [1/j]
+                            if has_zero:
+                                continue
+                            alternatives[break_start_time] = 1 / (sum(ps) ** sum(will_be_summed))
                         else:
                             alternatives[break_start_time] = ps
                     p_values = [value for value in alternatives.values()]
