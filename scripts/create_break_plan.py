@@ -22,17 +22,17 @@ BREAKS = {
     },
     "Quiz": {
         "Start": 0.5,
-        "End": 7,
+        "End": 8,
         "Minutes": 30
     },
     "Wellness 1": {
-        "Start": 3,
-        "End": 7.5,
+        "Start": 0.5,
+        "End": 8,
         "Minutes": 15
     },
     "Wellness 2": {
-        "Start": 3,
-        "End": 7.5,
+        "Start": 0.5,
+        "End": 8,
         "Minutes": 15
     }
 }
@@ -164,7 +164,7 @@ def get_intervals(filename, progress=None):
 
 def get_shift_plan(filename):
     df = pd.read_excel(io=filename, sheet_name="Overall")
-    df = pd.DataFrame(data=df.values[42:], columns=df.values[41])
+    df = pd.DataFrame(data=df.values[43:], columns=df.values[42])
     columns = ["Aze User", "Manager", "Skill", "Name Surname"]
     columns += [i for i in df.columns if isinstance(i, dt)]
     df = df[columns]
@@ -373,19 +373,19 @@ def create_break_plan(
                                 hc_skill_need = hc_skill_date["Need"].values[0]
                             p = (hc_skill_remaining / hc_skill_need) * 100
                             ps += [p]
-                        if value["Minutes"] // 15 > 1:
-                            will_be_summed = []
-                            has_zero = False
-                            for j in ps:
-                                if j == 0:
-                                    has_zero = True
-                                else:
-                                    will_be_summed += [1/j]
-                            if has_zero:
-                                continue
-                            alternatives[break_start_time] = 1 / (sum(ps) ** sum(will_be_summed))
-                        else:
-                            alternatives[break_start_time] = ps
+                        # if value["Minutes"] == 15:
+                        #     alternatives[break_start_time] = ps
+                        # else:
+                        will_be_summed = []
+                        has_zero = False
+                        for j in ps:
+                            if j == 0:
+                                has_zero = True
+                            else:
+                                will_be_summed += [1/j]
+                        if has_zero:
+                            continue
+                        alternatives[break_start_time] = 1 / (sum(ps) ** sum(will_be_summed))
                     p_values = [value for value in alternatives.values()]
                     index = p_values.index(max(p_values))
                     for j in range(value["Minutes"] // 15):
