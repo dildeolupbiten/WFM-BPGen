@@ -373,9 +373,6 @@ def create_break_plan(
                                 hc_skill_need = hc_skill_date["Need"].values[0]
                             p = (hc_skill_remaining / hc_skill_need) * 100
                             ps += [p]
-                        # if value["Minutes"] == 15:
-                        #     alternatives[break_start_time] = ps
-                        # else:
                         will_be_summed = []
                         has_zero = False
                         for j in ps:
