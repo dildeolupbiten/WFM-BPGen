@@ -3,5 +3,5 @@ A break plan generator
 
 ## Algorithm
 
-![example1](https://user-images.githubusercontent.com/29302909/174504667-9e943f34-d42b-47e5-a082-1bc7b3acaf76.jpg)
-![example2](https://user-images.githubusercontent.com/29302909/174504670-f1842cad-7d00-4d3f-b974-6d3c668f10ec.jpg)
+![example1](https://user-images.githubusercontent.com/29302909/174505013-6ed07207-d41c-4059-825d-c3186f1623dd.jpg)
+![example2](https://user-images.githubusercontent.com/29302909/174505014-aa18b3df-e2de-420a-b28f-6d138d2894c9.jpg)
