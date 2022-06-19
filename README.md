@@ -2,4 +2,5 @@
 A break plan generator
 
 ## Algorithm
-![algorithm](https://user-images.githubusercontent.com/29302909/174502245-59653da6-282f-4017-9f97-bc0f18648a93.jpeg)
+![algorithm](https://user-images.githubusercontent.com/29302909/174502284-7fa078fb-cc24-4e07-92ac-06caf4f4f9e9.jpeg)
+
