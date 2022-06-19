@@ -2,5 +2,6 @@
 A break plan generator
 
 ## Algorithm
-![algorithm](https://user-images.githubusercontent.com/29302909/174502284-7fa078fb-cc24-4e07-92ac-06caf4f4f9e9.jpeg)
 
+![algorithm](https://user-images.githubusercontent.com/29302909/174503979-545798b4-d6f7-4141-abaf-d269912327ec.png)
+![example](https://user-images.githubusercontent.com/29302909/174503980-be7c41af-4f67-40b0-ab40-96d9acefc2c8.png)
