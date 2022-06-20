@@ -2,7 +2,7 @@
 A break plan generator
 
 ## Algorithm
-![algorithm](https://user-images.githubusercontent.com/29302909/174627753-c9b3dc0d-ccdc-459b-a1b9-05e1e87d8b32.png)
+![algorithm](https://user-images.githubusercontent.com/29302909/174628264-2199e656-b88d-49b6-a5fb-a1c4b5a1041d.png)
 ### Example 1
 ![example1](https://user-images.githubusercontent.com/29302909/174505715-420ab82a-e110-4222-a13e-5c8fee132b97.jpg)
 ### Example 2
