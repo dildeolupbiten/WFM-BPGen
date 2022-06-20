@@ -7,4 +7,4 @@ A break plan generator
 ![example1](https://user-images.githubusercontent.com/29302909/174505013-6ed07207-d41c-4059-825d-c3186f1623dd.jpg)
 
 ### Example-2
-![example2](https://user-images.githubusercontent.com/29302909/174505014-aa18b3df-e2de-420a-b28f-6d138d2894c9.jpg)
+![example2](https://user-images.githubusercontent.com/29302909/174505260-6c868206-9374-42f4-9c81-c3553aed67d4.jpg)
