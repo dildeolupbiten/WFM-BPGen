@@ -7,17 +7,17 @@ from .libs import (
 BREAKS = {
     "Rest-1": {
         "Start": 1,
-        "End": 2,
+        "End": 3,
         "Minutes": 15
     },
     "Lunch": {
         "Start": 3,
-        "End": 5,
+        "End": 6,
         "Minutes": 45
     },
     "Rest-2": {
         "Start": 6,
-        "End": 7,
+        "End": 8,
         "Minutes": 15
     },
     "Quiz": {
