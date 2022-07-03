@@ -148,7 +148,7 @@ def get_intervals(filename, progress=None):
         avg_input, avg_aht = get_avg_values_of_n_days(
             filename=filename,
             skill=skill,
-            n_days=3
+            n_days=7
         )
         need = get_need(
             avg_input=avg_input,
