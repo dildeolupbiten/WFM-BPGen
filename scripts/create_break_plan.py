@@ -35,6 +35,7 @@ BREAKS = {
         "End": 8,
         "Minutes": 15
     }
+
 }
 
 
@@ -273,13 +274,32 @@ def create_break_plan(
         hc2=None,
         b_plan=None
 ):
+    tomorrow = (dt.strptime(date, "%m/%d/%Y") + td(days=1)).strftime("%m/%d/%Y")
     if not recursion:
+        yesterday = dt.strptime(date, "%m/%d/%Y") - td(days=1)
+        filename = f"{yesterday.month}.{yesterday.day} Break Plan.xlsx"
         breaks = {k: v for k, v in breaks.items() if k in ["Rest-1", "Lunch", "Rest-2"]}
         hc1 = get_15_minutes_interval(df=intervals, date=date)
-        hc2 = get_15_minutes_interval(
-            df=intervals,
-            date=(dt.strptime(date, "%m/%d/%Y") + td(days=1)).strftime("%m/%d/%Y")
-        )
+        skill_conversions = convert_skillname(shift_plan=shift_plan, hc=hc1)
+        hc2 = get_15_minutes_interval(df=intervals, date=tomorrow)
+        if os.path.exists(filename):
+            yesterday_plan = pd.read_excel(filename)
+            shifts = ["17:30-02:00", "18:30-03:00", "19:30-04:00"]
+            yesterday_plan = yesterday_plan[yesterday_plan["Shift"].isin(shifts)]
+            for skill in sorted(set(yesterday_plan["Skill"]), key=str.lower):
+                y_plan_skill = yesterday_plan[yesterday_plan["Skill"] == skill]
+                for people in y_plan_skill["Name Surname"]:
+                    people_data = y_plan_skill[y_plan_skill["Name Surname"] == people]
+                    for b in BREAKS.keys():
+                        b_time = people_data[b].values[0]
+                        if not pd.isna(b_time):
+                            b_time = pd.to_datetime(b_time)
+                            if b_time.day == (yesterday + td(days=1)).day:
+                                s = skill_conversions[skill]
+                                hc1_skill = hc1[hc1["Skill"] == s]
+                                t_index = hc1_skill[hc1_skill["Datetime"] == b_time].index[0]
+                                hc1.iloc[t_index, 5] -= 1
+                                hc1.iloc[t_index, 4] += 1
         if dt.strptime(date, "%m/%d/%Y").isoweekday() == 1:
             write_json(filename="quiz.json", data={})
     quiz = read_json(filename="quiz.json", data={}, breaks=False)
