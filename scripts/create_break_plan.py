@@ -284,7 +284,7 @@ def create_break_plan(
         hc2 = get_15_minutes_interval(df=intervals, date=tomorrow)
         if os.path.exists(filename):
             yesterday_plan = pd.read_excel(filename)
-            shifts = ["17:30-02:00", "18:30-03:00", "19:30-04:00"]
+            shifts = ["17:30-02:00", "18:30-03:00", "19:30-04:00", "20:30-05:00"]
             yesterday_plan = yesterday_plan[yesterday_plan["Shift"].isin(shifts)]
             for skill in sorted(set(yesterday_plan["Skill"]), key=str.lower):
                 y_plan_skill = yesterday_plan[yesterday_plan["Skill"] == skill]
