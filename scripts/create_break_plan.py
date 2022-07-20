@@ -7,17 +7,17 @@ from .libs import (
 BREAKS = {
     "Rest-1": {
         "Start": 1,
-        "End": 3,
+        "End": 2.25,
         "Minutes": 15
     },
     "Lunch": {
-        "Start": 3,
-        "End": 6,
+        "Start": 2.75,
+        "End": 4.75,
         "Minutes": 45
     },
     "Rest-2": {
-        "Start": 6,
-        "End": 8,
+        "Start": 5.75,
+        "End": 7.25,
         "Minutes": 15
     },
     "Quiz": {
@@ -26,16 +26,15 @@ BREAKS = {
         "Minutes": 30
     },
     "Wellness 1": {
-        "Start": 0.5,
-        "End": 8,
+        "Start": 2,
+        "End": 4,
         "Minutes": 15
     },
     "Wellness 2": {
-        "Start": 0.5,
+        "Start": 6,
         "End": 8,
         "Minutes": 15
     }
-
 }
 
 
@@ -149,7 +148,7 @@ def get_intervals(filename, progress=None):
         avg_input, avg_aht = get_avg_values_of_n_days(
             filename=filename,
             skill=skill,
-            n_days=7
+            n_days=2
         )
         need = get_need(
             avg_input=avg_input,
