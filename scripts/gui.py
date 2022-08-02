@@ -5,7 +5,7 @@ from .libs import (
     Image, ImageTk, Calendar, askopenfilename,
     showinfo, showwarning, showerror, pd, dt
 )
-from .about import About
+from .about import About, check_update
 from .create_break_plan import (
     get_shift_plan, get_intervals,
     get_hc, create_break_plan, read_json, write_json
@@ -277,9 +277,16 @@ class Menu(tk.Menu):
                 images=self.images,
             )
         )
-        self.add_command(
+        self.help = tk.Menu(master=self, tearoff=False)
+        self.add_cascade(label="Help", menu=self.help)
+        self.help.add_command(
             label="About",
             command=lambda: About(
+            )
+        )
+        self.help.add_command(
+            label="Update",
+            command=lambda: check_update(
             )
         )
         self.file.add_cascade(

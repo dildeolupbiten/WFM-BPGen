@@ -1,7 +1,84 @@
 # -*- coding: utf-8 -*-
 
-from .libs import os, tk, open_new
 from . import __version__
+from .libs import (
+    os, tk, json, open_new, urlopen, Popen,
+    URLError, showwarning, showinfo
+)
+
+
+def check_update():
+    try:
+        new = urlopen(
+            "https://raw.githubusercontent.com/dildeolupbiten"
+            "/WFM-BPGen/master/README.md"
+        ).read().decode()
+    except URLError:
+        showwarning(
+            title="Warning",
+            message="Couldn't connect.",
+        )
+        return
+    with open("README.md", "r", encoding="utf-8") as f:
+        old = f.read()[:-1]
+    if new != old:
+        with open("README.md", "w", encoding="utf-8") as f:
+            f.write(new)
+    try:
+        scripts = json.load(
+            urlopen(
+                url=f"https://api.github.com/repos/dildeolupbiten/"
+                    f"WFM-BPGen/contents/scripts?ref=master"
+            )
+        )
+    except URLError:
+        showwarning(
+            title="Warning",
+            message="Couldn't connect."
+        )
+        return
+    update = False
+    for i in scripts:
+        try:
+            file = urlopen(i["download_url"]).read().decode()
+        except URLError:
+            showwarning(
+                title="Warning",
+                message="Couldn't connect."
+            )
+            return
+        if i["name"] not in os.listdir("scripts"):
+            update = True
+            with open(f"scripts/{i['name']}", "w", encoding="utf-8") as f:
+                f.write(file)
+        else:
+            with open(f"scripts/{i['name']}", "r", encoding="utf-8") as f:
+                if file != f.read():
+                    update = True
+                    with open(
+                            f"scripts/{i['name']}",
+                            "w",
+                            encoding="utf-8"
+                    ) as g:
+                        g.write(file)
+    if update:
+        showinfo(
+            title="Info",
+            message="Program is updated."
+        )
+        if os.path.exists("defaults.ini"):
+            os.remove("defaults.ini")
+        if os.name == "posix":
+            Popen(["python3", "WFM-BPGen.py"])
+            os.kill(os.getpid(), __import__("signal").SIGKILL)
+        elif os.name == "nt":
+            Popen(["python", "WFM-BPGen.py"])
+            os.system(f"TASKKILL /F /PID {os.getpid()}")
+    else:
+        showinfo(
+            title="Info",
+            message="Program is up-to-date."
+        )
 
 
 class About(tk.Toplevel):
@@ -13,7 +90,7 @@ class About(tk.Toplevel):
         self.version = version
         self.name = "WFM-BPGen"
         self.date_built = "01.05.2022"
-        self.date_updated = "29.05.2022"
+        self.date_updated = "02.08.2022"
         self.developed_by = "Tanberk Celalettin Kutlu"
         self.contact = "tckutlu@gmail.com"
         self.github = "https://github.com/dildeolupbiten/WFM-BPGen"
