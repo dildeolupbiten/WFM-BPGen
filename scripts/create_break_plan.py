@@ -7,17 +7,17 @@ from .libs import (
 BREAKS = {
     "Rest-1": {
         "Start": 1,
-        "End": 2.25,
+        "End": 3,
         "Minutes": 15
     },
     "Lunch": {
-        "Start": 2.75,
-        "End": 4.75,
+        "Start": 3,
+        "End": 6,
         "Minutes": 45
     },
     "Rest-2": {
-        "Start": 5.75,
-        "End": 7.25,
+        "Start": 6,
+        "End": 8,
         "Minutes": 15
     },
     "Quiz": {
@@ -26,8 +26,8 @@ BREAKS = {
         "Minutes": 30
     },
     "Wellness 1": {
-        "Start": 2,
-        "End": 4,
+        "Start": 3,
+        "End": 6,
         "Minutes": 15
     },
     "Wellness 2": {
@@ -57,6 +57,10 @@ def counter(shift, date, data, previous=False):
 def get_hc(df, date):
     previous_date = dt.strptime(date, "%m/%d/%Y") - td(days=1)
     previous_date = previous_date.strftime("%m/%d/%Y")
+    if previous_date in df.columns:
+        previous = True
+    else:
+        previous = False
     data = []
     columns = ["Skill", "Time", "HC"]
     skills = sorted(set(df["Skill"]), key=str.lower)
@@ -64,13 +68,14 @@ def get_hc(df, date):
         skill_data = {i: 0 for i in range(24)}
         for shift in df[df["Skill"] == skill][date]:
             counter(shift=shift, date=date, data=skill_data)
-        for shift in df[df["Skill"] == skill][previous_date]:
-            counter(
-                shift=shift,
-                date=previous_date,
-                data=skill_data,
-                previous=True
-            )
+        if previous:
+            for shift in df[df["Skill"] == skill][previous_date]:
+                counter(
+                    shift=shift,
+                    date=previous_date,
+                    data=skill_data,
+                    previous=previous
+                )
         data.extend(
             [
                 [skill, key, values]
@@ -140,6 +145,7 @@ def get_intervals(filename, progress=None):
     received = 0
     for skill in skills:
         received += 1
+        print(skill)
         progress(
             s=size,
             r=received,
@@ -164,7 +170,7 @@ def get_intervals(filename, progress=None):
 
 def get_shift_plan(filename):
     df = pd.read_excel(io=filename, sheet_name="Overall")
-    df = pd.DataFrame(data=df.values[43:], columns=df.values[42])
+    df = pd.DataFrame(data=df.values[44:], columns=df.values[43])
     columns = ["Aze User", "Manager", "Skill", "Name Surname"]
     columns += [i for i in df.columns if isinstance(i, dt)]
     df = df[columns]
@@ -244,6 +250,20 @@ def has_conflict(breaks, break_start_time, break_times, key):
             for i in range(minutes // 15):
                 if break_start_time == v - td(minutes=15 * i):
                     return True
+    return False
+
+
+def has_long_break_gaps(key, breaks, break_start_time, break_times, minimum, maximum):
+    if key == "Rest-1":
+        return False
+    if key not in ["Lunch", "Rest-2"]:
+        return False
+    previous_key = list(breaks)[list(breaks).index(key) - 1]
+    previous_break_time = break_times[previous_key]
+    if break_start_time >= previous_break_time + td(hours=maximum):
+        return True
+    if break_start_time <= previous_break_time + td(hours=minimum):
+        return True
     return False
 
 
@@ -377,6 +397,15 @@ def create_break_plan(
                                 break_times=break_times,
                                 key=key
                             )
+                        ):
+                            continue
+                        if has_long_break_gaps(
+                            breaks=read_json("defaults.json"),
+                            break_start_time=break_start_time,
+                            break_times=break_times,
+                            key=key,
+                            maximum=3,
+                            minimum=2
                         ):
                             continue
                         ps = []
